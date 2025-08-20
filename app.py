@@ -18,8 +18,8 @@ def calcular_prestaciones_hn(fecha_ingreso, fecha_salida, salario_mensual):
     ingreso = datetime.strptime(fecha_ingreso, "%d/%m/%Y")
     salida = datetime.strptime(fecha_salida, "%d/%m/%Y")
 
-    dias_trabajados = (salida - ingreso).days
-    anios = dias_trabajados / 365
+    dias_trabajados_total = (salida - ingreso).days
+    anios = dias_trabajados_total / 365
 
     # --- CESANTÍA ---
     if anios < 0.25:
@@ -73,20 +73,39 @@ def calcular_prestaciones_hn(fecha_ingreso, fecha_salida, salario_mensual):
     else:
         dias_vac = 20
 
-    vacaciones = (salario_mensual / 30) * dias_vac
+    # proporción en el último año trabajado
+    try:
+        inicio_ultimo_anio = datetime(salida.year, ingreso.month, ingreso.day)
+    except:
+        inicio_ultimo_anio = datetime(salida.year, 1, 1)
+    dias_en_anio = (salida - inicio_ultimo_anio).days
+    if dias_en_anio < 0:
+        inicio_ultimo_anio = datetime(salida.year - 1, ingreso.month, ingreso.day)
+        dias_en_anio = (salida - inicio_ultimo_anio).days
+    proporcion_vac = dias_en_anio / 365
+    vacaciones = (salario_mensual / 30) * dias_vac * proporcion_vac
 
-    # --- DÉCIMOS ---
-    decimo_tercero = (dias_trabajados / 365) * salario_mensual
-    decimo_cuarto = (dias_trabajados / 365) * salario_mensual
+    # --- DÉCIMO TERCERO ---
+    inicio_dec13 = datetime(salida.year, 1, 1)
+    dias_dec13 = (salida - inicio_dec13).days
+    decimo_tercero = (dias_dec13 / 365) * salario_mensual
+
+    # --- DÉCIMO CUARTO ---
+    if salida.month >= 6:
+        inicio_dec14 = datetime(salida.year, 6, 1)
+    else:
+        inicio_dec14 = datetime(salida.year - 1, 6, 1)
+    dias_dec14 = (salida - inicio_dec14).days
+    decimo_cuarto = (dias_dec14 / 365) * salario_mensual
 
     total = cesantia + preaviso + vacaciones + decimo_tercero + decimo_cuarto
 
     return {
         "Cesantía": round(cesantia, 2),
         "Preaviso": round(preaviso, 2),
-        "Vacaciones": round(vacaciones, 2),
-        "Décimo Tercero": round(decimo_tercero, 2),
-        "Décimo Cuarto": round(decimo_cuarto, 2),
+        "Vacaciones proporcionales": round(vacaciones, 2),
+        "Décimo Tercero (proporcional)": round(decimo_tercero, 2),
+        "Décimo Cuarto (proporcional)": round(decimo_cuarto, 2),
         "Total Prestaciones": round(total, 2)
     }
 
