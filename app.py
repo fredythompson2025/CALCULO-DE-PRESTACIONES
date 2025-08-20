@@ -119,4 +119,3 @@ if st.button("Calcular Prestaciones"):
 
     except Exception as e:
         st.error(f"Error en el cálculo: {e}")
-lo: {e}")
